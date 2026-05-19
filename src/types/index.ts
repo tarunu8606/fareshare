@@ -1,2 +1,21 @@
-// Placeholder — Shared TypeScript types (Ride, User, Booking) defined in Session 1 Step 5
-// Import from here: import type { Ride } from '@/types'
+import { Gender } from "@prisma/client"
+
+// Extends the default NextAuth Session so session.user.id etc. work without TypeScript errors
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      name: string
+      email: string
+      image?: string | null
+      gender?: Gender | null
+      age?: number | null
+    }
+  }
+  interface User {
+    gender?: Gender | null
+    age?: number | null
+  }
+}
+
+export type { Gender }

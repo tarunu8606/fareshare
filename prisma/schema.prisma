@@ -42,6 +42,9 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  // Auth
+  password     String?
+
   // FareShare profile fields
   gender       Gender?
   age          Int?
