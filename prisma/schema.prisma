@@ -1,2 +1,164 @@
-# Placeholder — Prisma schema will be written in Session 1 Step 5
-# Run `npx prisma init` to initialize, then replace this file's contents
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum GenderPreference {
+  ANY
+  MALE
+  FEMALE
+}
+
+enum TripStatus {
+  OPEN
+  FULL
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// ─── NextAuth Required Models ─────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  // FareShare profile fields
+  gender       Gender?
+  age          Int?
+  phone        String?
+  rating       Float   @default(5.0)
+  totalRatings Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+
+  // FareShare relations
+  trips           Trip[]
+  matches         Match[]
+  ratingsGiven    Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
+  reportsFiled    Report[] @relation("ReportsFiled")
+  reportsReceived Report[] @relation("ReportsReceived")
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ─── FareShare Models ─────────────────────────────────────────────────────────
+
+model Trip {
+  id               String           @id @default(cuid())
+  creatorId        String
+  pickupAddress    String
+  dropoffAddress   String
+  pickupLat        Float
+  pickupLng        Float
+  dropoffLat       Float
+  dropoffLng       Float
+  departureTime    DateTime
+  seatsAvailable   Int              @default(1)
+  status           TripStatus       @default(OPEN)
+  genderPreference GenderPreference @default(ANY)
+  createdAt        DateTime         @default(now())
+
+  creator User     @relation(fields: [creatorId], references: [id])
+  matches Match[]
+  ratings Rating[]
+  reports Report[]
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  tripId      String
+  requesterId String
+  status      MatchStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  trip      Trip @relation(fields: [tripId], references: [id])
+  requester User @relation(fields: [requesterId], references: [id])
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  tripId     String
+  giverId    String
+  receiverId String
+  stars      Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  trip     Trip @relation(fields: [tripId], references: [id])
+  giver    User @relation("RatingsGiven", fields: [giverId], references: [id])
+  receiver User @relation("RatingsReceived", fields: [receiverId], references: [id])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reportedId String
+  tripId     String?
+  reason     String
+  createdAt  DateTime @default(now())
+
+  reporter User  @relation("ReportsFiled", fields: [reporterId], references: [id])
+  reported User  @relation("ReportsReceived", fields: [reportedId], references: [id])
+  trip     Trip? @relation(fields: [tripId], references: [id])
+}
