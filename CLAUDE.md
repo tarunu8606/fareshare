@@ -1,4 +1,3 @@
-@AGENTS.md
 # 🚗 FareShare — Project Bible & GodMode Vibe Coding System
 
 ---
